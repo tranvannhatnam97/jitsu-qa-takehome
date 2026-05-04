@@ -38,14 +38,41 @@ Every push to `main` and every pull request runs all three suites in parallel vi
 |-----|--------|-------|
 | `task-1-web` | `ubuntu-latest` | Playwright + Chromium (`--with-deps`) |
 | `task-2-api` | `ubuntu-latest` | No browser, no auth (public GitHub endpoints) |
-| `task-3-mobile` | `ubuntu-latest` | KVM-accelerated Android emulator API 34 (x86_64) via [`reactivecircus/android-emulator-runner`](https://github.com/ReactiveCircus/android-emulator-runner). The APK is downloaded from the take-home Google Drive link at runtime; override `vars.APK_GDRIVE_ID` to point at a different file. |
+| `task-3-mobile` | `ubuntu-latest` | KVM-accelerated Android emulator API 33 (x86_64) via [`reactivecircus/android-emulator-runner`](https://github.com/ReactiveCircus/android-emulator-runner). The APK is downloaded from the take-home Google Drive link at runtime; override `vars.APK_GDRIVE_ID` to point at a different file. |
 
-After the three jobs finish, `publish-pages` aggregates all Allure reports and deploys them to **GitHub Pages**, behind a single landing page:
+After the three jobs finish, `publish-pages` aggregates all Allure reports and deploys them to **GitHub Pages**.
 
-- `https://tranvannhatnam97.github.io/jitsu-qa-takehome/` → index
-- `…/task-1/` · `…/task-2/` · `…/task-3/` → per-task Allure reports
+### View the reports
 
-Each job also uploads its raw artefacts (Playwright HTML, traces, mobile recordings) for download from the workflow run page.
+The published reports live at the URLs below — they re-deploy automatically after every successful run on `main`, no setup needed on the reviewer side:
+
+- **Index page** — https://tranvannhatnam97.github.io/jitsu-qa-takehome/
+- Task I — https://tranvannhatnam97.github.io/jitsu-qa-takehome/task-1/
+- Task II — https://tranvannhatnam97.github.io/jitsu-qa-takehome/task-2/
+- Task III — https://tranvannhatnam97.github.io/jitsu-qa-takehome/task-3/
+
+Each per-task report shows the assertion timeline, per-step screenshots, the video (Task I + III), the per-step duration, and any retries. Raw Playwright traces and the Task III device recording are also uploaded as workflow artefacts on every run page (Actions → workflow run → Artifacts).
+
+### Trigger a run manually
+
+The `CI` workflow has a `workflow_dispatch` trigger, so anyone with read access to the repo (or you on the GitHub UI) can re-run it on demand:
+
+| How | Command |
+|-----|---------|
+| **Web UI** | Open [Actions → CI](https://github.com/tranvannhatnam97/jitsu-qa-takehome/actions/workflows/ci.yml) → click **Run workflow ▾** → choose branch (`main`) → **Run workflow** |
+| **`gh` CLI** | `gh workflow run ci.yml --ref main` |
+| **REST API** | `curl -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/tranvannhatnam97/jitsu-qa-takehome/actions/workflows/ci.yml/dispatches -d '{"ref":"main"}'` |
+
+Watch live progress with `gh run watch <run-id>`, or open the run page in the browser. After the run finishes the published reports update automatically.
+
+### Override the target
+
+The default behaviour matches the take-home defaults, but each job accepts overrides via repository **Variables** or **Secrets** so a reviewer can re-run against a different target without editing the workflow:
+
+| Variable | Default | Used by |
+|----------|---------|---------|
+| `vars.APK_GDRIVE_ID` | `1dUgCO1UbBsJhyNwshT6OhKXWTjP4prPI` | Task III — alternative APK Google Drive file ID |
+| env `GITHUB_ORG` | `SeleniumHQ` | Task II — pass via `-f` on `gh workflow run` or local run |
 
 ## Reporting — Allure
 
