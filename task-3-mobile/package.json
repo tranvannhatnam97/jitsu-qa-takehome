@@ -1,0 +1,21 @@
+{
+  "name": "task-3-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Appium tests for the Jitsu Driver Android app",
+  "scripts": {
+    "appium": "appium --base-path=/wd/hub",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "appium": "^2.12.0",
+    "appium-uiautomator2-driver": "^3.7.0",
+    "typescript": "^5.7.0",
+    "webdriverio": "^9.4.0"
+  }
+}

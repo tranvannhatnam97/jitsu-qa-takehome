@@ -8,9 +8,9 @@ Submission for the Jitsu QA Automation take-home exercise covering web UI, REST 
 
 | # | Task | Stack | Folder | Status |
 |---|------|-------|--------|--------|
-| I | Web automation against `time.is` | Playwright + TypeScript | [task-1-web/](./task-1-web/) | Implemented |
-| II | GitHub REST API automation | Playwright (request context) + TypeScript | [task-2-api/](./task-2-api/) | Implemented |
-| III | Mobile (Jitsu Driver app) — optional | Appium | [task-3-mobile/](./task-3-mobile/) | Not attempted |
+| I | Web automation against `time.is` | Playwright + TypeScript | [task-1-web/](./task-1-web/) | Passing |
+| II | GitHub REST API automation | Playwright (request context) + TypeScript | [task-2-api/](./task-2-api/) | Passing |
+| III | Mobile (Jitsu Driver app) | Appium + WebdriverIO + TypeScript (Playwright runner) | [task-3-mobile/](./task-3-mobile/) | Passing |
 
 Each task is a self-contained project with its own `package.json`, dependencies, and README. See the per-task READMEs for full details.
 
@@ -30,6 +30,16 @@ cd ../task-2-api
 npm install
 npm test                        # default org: SeleniumHQ
 GITHUB_ORG=playwright npm test  # optional: switch org
+
+# Task III — Mobile (needs JDK 17 + Android SDK + emulator + APK)
+cd ../task-3-mobile
+source scripts/setup-env.sh                # JAVA_HOME, ANDROID_HOME on PATH
+emulator -avd jitsu_test -no-window -no-audio &
+adb wait-for-device
+npm install
+npx appium driver install uiautomator2
+npm run appium &                            # leave running
+npm test                                    # spec + per-step outputs
 ```
 
 ## Sample output
@@ -56,6 +66,16 @@ Running 1 test using 1 worker
 [SeleniumHQ] most watched: SeleniumHQ/selenium (34078 watchers)
   ✓  GitHub org "SeleniumHQ" › aggregate stats: open issues, recent updates, most watched (1.2s)
   1 passed (1.5s)
+```
+
+**Task III** (against the running emulator + Jitsu Driver APK):
+
+```
+Running 1 test using 1 worker
+  ✓ 1 tests/tutorials.spec.ts:9:7 › Jitsu Driver — Tutorials ›
+       login → Profile → Tutorials shows all sections;
+       Assigned Route launches tutorial (22.3s)
+  1 passed (22.7s)
 ```
 
 ## Project layout
@@ -107,9 +127,9 @@ The base-class scaffolding (`BaseComponent`, `BasePage`) was ported from a priva
 The task description suggests using the site's "search feature" — a non-trivial detail because `time.is` renders its UI client-side and ships a single `<input id="q">` inside `<form id="qbox" action="/" method="get">`. Submitting the form via Enter navigates to `/<City_With_Underscores>` (e.g. `/Los_Angeles`). Result-page selectors verified live: `h1` (heading), `#dd` (date), `#clock` (live `HH:MM:SS`). No autocomplete is rendered, so the search method submits the form directly and waits for a URL change.
 
 ### What I would add with more time
-- **Task III (mobile)** — Appium driver setup, an `Screen` base class mirroring `BasePage`, three screen objects (`LoginScreen`, `ProfileScreen`, `TutorialsScreen`), a fixture wiring the driver, plus the spec covering tutorial dismissal.
-- **CI** — a GitHub Actions workflow that runs both projects on push, with the HTML report uploaded as an artifact.
+- **CI** — a GitHub Actions workflow that runs all three projects on push, with the HTML report uploaded as an artifact. Task III would need a self-hosted runner with hardware-accelerated Android virtualisation (ARM64).
 - **More cities for Task I** — the spec is already data-driven; adding entries to the `CITIES` array is a one-liner. With more time I would parametrise across timezones to surface DST edge cases.
+- **Task III selector hardening** — replace text-based xpaths with `accessibility id`s where stable, and add a parameterised version that runs the same flow for `Direct Booking` and `Ticket Booking` to widen coverage.
 
 ## Assumptions
 

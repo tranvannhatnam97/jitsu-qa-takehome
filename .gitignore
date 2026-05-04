@@ -34,6 +34,7 @@ Thumbs.db
 
 # Mobile / Appium
 task-3-mobile/apps/*.apk
+task-3-mobile/tmp/
 .appium/
 
 # Local artifacts
