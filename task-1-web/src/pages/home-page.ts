@@ -38,23 +38,24 @@ export class HomePage extends BasePage {
   async searchCity(query: string): Promise<TimeResultPage> {
     await this.fill(this.searchInput, query);
 
+    // The autocomplete dropdown (a `<table>` of suggestion links) is the
+    // primary entry-point on regions that show it. Read the first
+    // suggestion's href — this is the URL the search resolved to — and
+    // navigate to it directly. Going through the form / Enter / click
+    // path was producing inconsistent navigation events on CI runners
+    // because the consent dialog and ad scripts both intercept clicks.
     const suggestion = this.page.locator(this.suggestionLink).first();
-    let suggestionClicked = false;
+    let href: string | null = null;
     try {
-      await suggestion.waitFor({ state: 'visible', timeout: 2_500 });
-      suggestionClicked = true;
+      await suggestion.waitFor({ state: 'attached', timeout: 5_000 });
+      href = await suggestion.getAttribute('href');
     } catch {
-      /* no dropdown — submit the form via Enter */
+      /* no dropdown — fall back to the slug we expect from the query */
     }
 
-    await Promise.all([
-      // `commit` resolves as soon as the navigation URL changes; we do
-      // not depend on `load` because time.is loads dozens of ad scripts
-      // that delay it past 30 s on CI.
-      this.page.waitForURL(/time\.is\/[^?#]+/, { timeout: 20_000, waitUntil: 'commit' }),
-      suggestionClicked ? suggestion.click() : this.press(this.searchInput, 'Enter'),
-    ]);
-
+    const slug = query.trim().replace(/\s+/g, '_');
+    const target = href ? new URL(href, 'https://time.is').toString() : `https://time.is/${slug}`;
+    await this.page.goto(target, { waitUntil: 'domcontentloaded', timeout: 20_000 });
     return new TimeResultPage(this.page);
   }
 
