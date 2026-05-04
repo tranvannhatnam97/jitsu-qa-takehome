@@ -140,7 +140,8 @@ jobs:
           profile: pixel_5
           avd-name: jitsu_test
           force-avd-creation: false
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
           script: |
             cd task-3-mobile
