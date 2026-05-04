@@ -24,10 +24,12 @@ export class HomePage extends BasePage {
   async searchCity(query: string): Promise<TimeResultPage> {
     await this.fill(this.searchInput, query);
     await Promise.all([
-      // The result page loads dozens of third-party ad scripts that can
-      // delay the `load` event well past 30 s. We only need the result
-      // markup, so wait for `domcontentloaded` (or just the URL change).
-      this.page.waitForURL(/time\.is\/[^?#]+/, { timeout: 15_000, waitUntil: 'domcontentloaded' }),
+      // `commit` resolves as soon as the navigation URL changes — we
+      // do not need the load or DOMContentLoaded event because the
+      // result-page selectors do their own waitFor downstream. The
+      // looser default (`load`) regularly times out on CI because
+      // time.is loads dozens of third-party ad scripts.
+      this.page.waitForURL(/time\.is\/[^?#]+/, { timeout: 15_000, waitUntil: 'commit' }),
       this.press(this.searchInput, 'Enter'),
     ]);
     return new TimeResultPage(this.page);
