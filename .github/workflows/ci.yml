@@ -143,16 +143,10 @@ jobs:
           emulator-boot-timeout: 600
           emulator-options: -no-window -no-audio -no-snapshot -gpu swiftshader_indirect -accel on
           disable-animations: true
-          script: |
-            cd task-3-mobile
-            nohup npx appium --base-path=/wd/hub > /tmp/appium.log 2>&1 &
-            i=0
-            while [ $i -lt 20 ]; do
-              if curl -s http://127.0.0.1:4723/wd/hub/status >/dev/null 2>&1; then break; fi
-              sleep 1
-              i=$((i+1))
-            done
-            npx playwright test
+          # The runner re-exec's each line of `script:` under sh -c
+          # separately, which breaks while/for. Delegate to a real bash
+          # script that owns the whole flow.
+          script: bash task-3-mobile/scripts/ci-run.sh
       - name: Generate Allure report
         if: always()
         run: npx allure generate allure-results --clean -o allure-report
