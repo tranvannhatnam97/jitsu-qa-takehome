@@ -24,16 +24,17 @@ npm install
 ```bash
 npm test                              # run against SeleniumHQ
 GITHUB_ORG=playwright npm test        # run against a different org
-GITHUB_TOKEN=ghp_xxx npm test         # use a PAT (raises rate limit 60→5,000/hr)
 npm run report                        # open the HTML report
 npm run typecheck                     # strict TS check
 ```
+
+The endpoints used (`/orgs/{org}/repos`, `/search/issues`) are fully public and require no authentication. GitHub's unauthenticated rate limit (60 requests/hour) is well above what one test run consumes — for SeleniumHQ (~30 repos at `per_page=100`) the run costs ~1 request.
 
 ## Project structure
 
 ```
 task-2-api/
-├── playwright.config.ts            # baseURL + GitHub headers (Authorization injected if GITHUB_TOKEN set)
+├── playwright.config.ts            # baseURL + GitHub headers (no auth — public endpoints only)
 ├── tsconfig.json
 ├── src/
 │   ├── core/
@@ -51,7 +52,7 @@ task-2-api/
 - **Pagination is centralised.** `BaseApi.paginate()` follows the `rel="next"` `Link` header until exhausted, with `per_page=100` to minimise round-trips. Domain methods just say "give me all repos" — no page math leaks into them.
 - **Domain layer is thin and typed.** `GitHubOrgApi` exposes one method per question; the test reads almost like prose.
 - **Custom fixture.** `tests/github-org.spec.ts` receives `githubApi` directly. No constructor calls in the spec.
-- **Auth-aware.** A `GITHUB_TOKEN` env var is wired into `extraHTTPHeaders` automatically. Without it the test still runs, but the unauthenticated 60 req/hr limit may bite for very large orgs.
+- **No authentication.** All endpoints are public; the test runs against the unauthenticated rate limit. One run uses ~1 request, so the 60/hr quota is never the bottleneck.
 - **Idempotent assertions.** Q3's check (`top.watchers_count === max`) uses the same data Q1 collected — there is no second source of truth for the matcher to drift against.
 
 ## Caveats

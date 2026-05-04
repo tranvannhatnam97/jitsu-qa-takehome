@@ -1,7 +1,5 @@
 import { defineConfig } from '@playwright/test';
 
-const token = process.env.GITHUB_TOKEN;
-
 export default defineConfig({
   testDir: './tests',
   timeout: 60_000,
@@ -16,7 +14,6 @@ export default defineConfig({
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'jitsu-qa-takehome',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   },
 });

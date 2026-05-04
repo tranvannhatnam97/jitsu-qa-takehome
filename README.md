@@ -25,11 +25,11 @@ npm install
 npx playwright install chromium
 npm test
 
-# Task II — API (no browser needed)
+# Task II — API (no browser needed, no auth needed)
 cd ../task-2-api
 npm install
 npm test                        # default org: SeleniumHQ
-GITHUB_TOKEN=ghp_xxx npm test   # optional: raises rate limit 60 → 5,000 / hr
+GITHUB_ORG=playwright npm test  # optional: switch org
 ```
 
 ## Sample output
@@ -94,7 +94,7 @@ Running 1 test using 1 worker
 - **Custom Playwright fixtures.** Each project extends `test` in `src/fixtures/` so specs declare what they need (`{ homePage, timeResultPage }` or `{ githubApi }`) and Playwright builds the objects per-test. No constructors leak into the spec body.
 - **Reliable over flaky.** Assertions use Playwright's auto-retrying matchers (`expect(...).toBeVisible`, `expect.poll(...).not.toBe(initial)` for the ticking clock, `toHaveText`). The clock check verifies the seconds value advances within a bounded poll window — never a fixed `sleep`.
 - **Pagination centralised.** `BaseApi.paginate()` walks the `Link: rel="next"` header until exhausted, with `per_page=100` to minimise round-trips. Domain methods (`listAllRepos`, `mostWatched`, ...) are oblivious to pages.
-- **Auth-aware, optional-token.** Task II reads `GITHUB_TOKEN` from the environment and injects `Authorization: Bearer ...` only when present. The unauthenticated path still works for small orgs.
+- **No authentication for Task II.** All GitHub endpoints used (`/orgs/{org}/repos`, `/search/issues`) are public. One test run costs ~1 request (with `per_page=100`), well below the 60/hr unauthenticated quota.
 - **Separation of concerns.** `src/core/` holds infrastructure (base classes, pagination, action wrappers). `src/pages/` and `src/apis/` hold the domain. `tests/` contains assertions and step orchestration only.
 - **Path aliases.** `tsconfig.json` defines `@core/*`, `@pages/*`, `@apis/*`, `@fixtures/*` — imports stay readable as the tree grows. `tsx` (used by Playwright) honours them via the same `tsconfig`.
 
@@ -110,7 +110,6 @@ The task description suggests using the site's "search feature" — a non-trivia
 - **Task III (mobile)** — Appium driver setup, an `Screen` base class mirroring `BasePage`, three screen objects (`LoginScreen`, `ProfileScreen`, `TutorialsScreen`), a fixture wiring the driver, plus the spec covering tutorial dismissal.
 - **CI** — a GitHub Actions workflow that runs both projects on push, with the HTML report uploaded as an artifact.
 - **More cities for Task I** — the spec is already data-driven; adding entries to the `CITIES` array is a one-liner. With more time I would parametrise across timezones to surface DST edge cases.
-- **Resilience around GitHub rate-limits** — for very large orgs, fall back to the conditional-request flow (`If-None-Match` / `ETag`) so re-runs against unchanged data don't cost a fresh quota.
 
 ## Assumptions
 
