@@ -7,7 +7,24 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: [['html', { open: 'never' }], ['list']],
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+    [
+      'allure-playwright',
+      {
+        detail: true,
+        suiteTitle: false,
+        environmentInfo: {
+          framework: 'Playwright (request context)',
+          target: 'api.github.com',
+          org: process.env.GITHUB_ORG ?? 'SeleniumHQ',
+          os: process.platform,
+          node: process.version,
+        },
+      },
+    ],
+  ],
   use: {
     baseURL: 'https://api.github.com',
     extraHTTPHeaders: {

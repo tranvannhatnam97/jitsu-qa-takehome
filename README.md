@@ -42,6 +42,35 @@ npm run appium &                            # leave running
 npm test                                    # spec + per-step outputs
 ```
 
+## Reporting — Allure
+
+All three tasks ship with **Allure Report** as a unified test reporter on top of Playwright's built-in HTML reporter. Allure was chosen because it natively understands Playwright's `test.step` blocks and presents per-step screenshots, traces, and the captured video alongside the assertion timeline.
+
+What gets attached per step:
+
+| Task | Per-step screenshot | Video |
+|------|---------------------|-------|
+| I — web | DOM screenshot via `page.screenshot()` (helper `stepWithSnap`) | Playwright's `video: 'on'` |
+| II — API | n/a (no UI) | n/a |
+| III — mobile | Device screenshot via `driver.takeScreenshot()` (helper `stepWithSnap`) | `adb screenrecord` lifecycle in the driver fixture |
+
+Generate and view a report (per task):
+
+```bash
+cd task-1-web                           # or task-2-api / task-3-mobile
+npm test                                # produces allure-results/
+npm run report                          # generates allure-report/, opens it in your browser
+```
+
+`npm run report` is shorthand for `allure generate allure-results --clean -o allure-report && allure open allure-report`. Allure requires **Java 11 or newer** on your PATH; the project installs OpenJDK 17 for Task III so reusing that JDK is enough:
+
+```bash
+source task-3-mobile/scripts/setup-env.sh   # exports JAVA_HOME
+cd task-1-web && npm run report
+```
+
+The Playwright HTML report stays available at `npm run report:html` if you prefer it.
+
 ## Sample output
 
 **Task I:**

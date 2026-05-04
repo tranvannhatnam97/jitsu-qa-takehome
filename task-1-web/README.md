@@ -25,9 +25,19 @@ npx playwright install chromium
 npm test                    # headless
 npm run test:headed         # show the browser
 npm run test:ui             # Playwright UI mode
-npm run report              # open the last HTML report
+npm run report              # generate + open Allure report (needs Java 11+)
+npm run report:html         # open the Playwright HTML report
 npm run typecheck           # strict TS check
 ```
+
+## Reporting
+
+Two reporters run in parallel:
+
+- **Playwright HTML** at `playwright-report/` (open with `npm run report:html`)
+- **Allure** at `allure-results/` → `allure-report/` (build + open with `npm run report`)
+
+Allure attaches a screenshot after every `test.step` (helper `stepWithSnap` in `src/core/step.ts`) plus the full Playwright `video: 'on'` recording.
 
 ## Project structure
 

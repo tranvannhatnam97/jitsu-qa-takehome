@@ -71,6 +71,9 @@ npm run appium
 # Terminal C — run the test
 source scripts/setup-env.sh
 npm test
+
+# View the Allure report (per-step screenshots + screen-recording video)
+npm run report
 ```
 
 ## Project structure

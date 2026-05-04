@@ -24,7 +24,8 @@ npm install
 ```bash
 npm test                              # run against SeleniumHQ
 GITHUB_ORG=playwright npm test        # run against a different org
-npm run report                        # open the HTML report
+npm run report                        # generate + open Allure report (needs Java 11+)
+npm run report:html                   # open the Playwright HTML report
 npm run typecheck                     # strict TS check
 ```
 

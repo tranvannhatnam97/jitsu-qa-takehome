@@ -13,6 +13,10 @@ test-results/
 blob-report/
 playwright/.cache/
 
+# Allure
+allure-results/
+allure-report/
+
 # Env / secrets
 .env
 .env.local
@@ -35,6 +39,7 @@ Thumbs.db
 # Mobile / Appium
 task-3-mobile/apps/*.apk
 task-3-mobile/tmp/
+task-3-mobile/recordings/
 .appium/
 
 # Local artifacts
