@@ -16,23 +16,38 @@ Each task is a self-contained project with its own `package.json`, dependencies,
 
 ## Quick start
 
-Each task has a one-line setup and a one-line run script under [`scripts/`](./scripts/). Node.js ≥ 20 is the only shared prerequisite for Tasks I and II; Task III also needs Homebrew (the setup script installs everything else).
+Each task ships a one-line setup script and a one-line run script under [`scripts/`](./scripts/). Both Bash (`*.sh`) and PowerShell (`*.ps1`) variants are provided so the same flow works on macOS / Linux / Git Bash and on Windows.
+
+Shared prerequisites: **Node.js ≥ 20**. Task III additionally needs Homebrew on macOS or `winget` on Windows — the setup script installs everything else (JDK 17, Android SDK 34, ARM64 / x86 system image, emulator, AVD, Appium 2 + uiautomator2 driver).
+
+### macOS / Linux / Git Bash
 
 ```bash
-# Task I — web (Playwright + Chromium)
 sh scripts/setup-task-1.sh && sh scripts/run-task-1.sh
-
-# Task II — API (no browser, no auth)
 sh scripts/setup-task-2.sh && sh scripts/run-task-2.sh
-GITHUB_ORG=playwright sh scripts/run-task-2.sh   # override the target org
+GITHUB_ORG=playwright sh scripts/run-task-2.sh    # override the target org
 
-# Task III — Mobile (JDK 17 + Android SDK + ARM64 emulator + Appium)
-sh scripts/setup-task-3.sh                       # ~30 min on first run, ~10 GB on disk
+sh scripts/setup-task-3.sh                        # ~30 min on first run, ~10 GB on disk
 # Place the Jitsu Driver APK at task-3-mobile/apps/jitsu-driver.apk
-sh scripts/run-task-3.sh                         # boots the emulator + Appium if needed
+sh scripts/run-task-3.sh                          # boots emulator + Appium if needed
 ```
 
-The `setup-*` scripts are idempotent — re-running them is safe and only re-installs missing pieces. The `run-*` scripts also build the Allure report (per-step screenshots + the Task III device recording).
+### Windows (PowerShell)
+
+```powershell
+# One-time: allow local scripts to run
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+powershell -File scripts\setup-task-1.ps1; powershell -File scripts\run-task-1.ps1
+powershell -File scripts\setup-task-2.ps1; powershell -File scripts\run-task-2.ps1
+$env:GITHUB_ORG = 'playwright'; powershell -File scripts\run-task-2.ps1
+
+powershell -File scripts\setup-task-3.ps1
+# Place the Jitsu Driver APK at task-3-mobile\apps\jitsu-driver.apk
+powershell -File scripts\run-task-3.ps1
+```
+
+Both `setup-*` variants are idempotent — every step is gated on whether the artefact already exists. The `run-*` scripts also build the Allure report (per-step screenshots + the Task III device recording).
 
 ## Reporting — Allure
 
@@ -105,11 +120,11 @@ Running 1 test using 1 worker
 .
 ├── README.md                       # this file
 ├── .gitignore
-├── scripts/                        # one-liner setup + run per task
-│   ├── _env.sh                     # shared JDK + Android SDK env (sourced by others)
-│   ├── setup-task-1.sh / run-task-1.sh
-│   ├── setup-task-2.sh / run-task-2.sh
-│   └── setup-task-3.sh / run-task-3.sh
+├── scripts/                        # one-liner setup + run per task (.sh + .ps1 parity)
+│   ├── _env.sh    / _env.ps1       # shared JDK + Android SDK env
+│   ├── setup-task-1.{sh,ps1}  /  run-task-1.{sh,ps1}
+│   ├── setup-task-2.{sh,ps1}  /  run-task-2.{sh,ps1}
+│   └── setup-task-3.{sh,ps1}  /  run-task-3.{sh,ps1}
 ├── task-1-web/                     # Task I — Playwright UI
 │   ├── playwright.config.ts        # list + html + allure reporters; video: 'on'
 │   ├── tsconfig.json               # path aliases: @core, @pages, @fixtures
@@ -157,6 +172,7 @@ Running 1 test using 1 worker
 - **No authentication for Task II.** All GitHub endpoints used (`/orgs/{org}/repos`, `/search/issues`) are public. One test run costs ~1 request (with `per_page=100`), well below the 60/hr unauthenticated quota.
 - **Separation of concerns.** `src/core/` holds infrastructure (base classes, pagination, action wrappers). `src/pages/` and `src/apis/` hold the domain. `tests/` contains assertions and step orchestration only.
 - **Path aliases.** `tsconfig.json` defines `@core/*`, `@pages/*`, `@apis/*`, `@fixtures/*` — imports stay readable as the tree grows. `tsx` (used by Playwright) honours them via the same `tsconfig`.
+- **Cross-platform scripts.** Every shell script (`*.sh`) has a PowerShell sibling (`*.ps1`) with parity behaviour, including JDK / Android SDK auto-detection and Allure report generation. Reviewers on macOS, Linux (Git Bash / WSL), and native Windows hit the same one-liners.
 
 ## Engineering notes
 
