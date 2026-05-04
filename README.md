@@ -16,38 +16,36 @@ Each task is a self-contained project with its own `package.json`, dependencies,
 
 ## Quick start
 
-Each task ships a one-line setup script and a one-line run script under [`scripts/`](./scripts/). Both Bash (`*.sh`) and PowerShell (`*.ps1`) variants are provided so the same flow works on macOS / Linux / Git Bash and on Windows.
-
-Shared prerequisites: **Node.js ≥ 20**. Task III additionally needs Homebrew on macOS or `winget` on Windows — the setup script installs everything else (JDK 17, Android SDK 34, ARM64 / x86 system image, emulator, AVD, Appium 2 + uiautomator2 driver).
-
-### macOS / Linux / Git Bash
+Each task ships a one-line setup script and a one-line run script under [`scripts/`](./scripts/). Run them on **macOS / Linux / WSL / Git Bash** — Node.js ≥ 20 is the only shared prerequisite. Task III additionally needs Homebrew (the setup script installs JDK 17, Android SDK 34, the ARM64 / x86 system image, the emulator, the AVD, and the Appium uiautomator2 driver — anything missing).
 
 ```bash
 sh scripts/setup-task-1.sh && sh scripts/run-task-1.sh
 sh scripts/setup-task-2.sh && sh scripts/run-task-2.sh
-GITHUB_ORG=playwright sh scripts/run-task-2.sh    # override the target org
+GITHUB_ORG=playwright sh scripts/run-task-2.sh     # override the target org
 
-sh scripts/setup-task-3.sh                        # ~30 min on first run, ~10 GB on disk
+sh scripts/setup-task-3.sh                         # ~30 min on first run, ~10 GB on disk
 # Place the Jitsu Driver APK at task-3-mobile/apps/jitsu-driver.apk
-sh scripts/run-task-3.sh                          # boots emulator + Appium if needed
+sh scripts/run-task-3.sh                           # boots emulator + Appium if needed
 ```
 
-### Windows (PowerShell)
+The `setup-*` scripts are idempotent — every step is gated on whether the artefact already exists. The `run-*` scripts also build the Allure report (per-step screenshots + the Task III device recording).
 
-```powershell
-# One-time: allow local scripts to run
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+## CI / GitHub Pages
 
-powershell -File scripts\setup-task-1.ps1; powershell -File scripts\run-task-1.ps1
-powershell -File scripts\setup-task-2.ps1; powershell -File scripts\run-task-2.ps1
-$env:GITHUB_ORG = 'playwright'; powershell -File scripts\run-task-2.ps1
+Every push to `main` and every pull request runs all three suites in parallel via GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
-powershell -File scripts\setup-task-3.ps1
-# Place the Jitsu Driver APK at task-3-mobile\apps\jitsu-driver.apk
-powershell -File scripts\run-task-3.ps1
-```
+| Job | Runner | Notes |
+|-----|--------|-------|
+| `task-1-web` | `ubuntu-latest` | Playwright + Chromium (`--with-deps`) |
+| `task-2-api` | `ubuntu-latest` | No browser, no auth (public GitHub endpoints) |
+| `task-3-mobile` | `ubuntu-latest` | KVM-accelerated Android emulator API 34 (x86_64) via [`reactivecircus/android-emulator-runner`](https://github.com/ReactiveCircus/android-emulator-runner). The APK is downloaded from the take-home Google Drive link at runtime; override `vars.APK_GDRIVE_ID` to point at a different file. |
 
-Both `setup-*` variants are idempotent — every step is gated on whether the artefact already exists. The `run-*` scripts also build the Allure report (per-step screenshots + the Task III device recording).
+After the three jobs finish, `publish-pages` aggregates all Allure reports and deploys them to **GitHub Pages**, behind a single landing page:
+
+- `https://tranvannhatnam97.github.io/jitsu-qa-takehome/` → index
+- `…/task-1/` · `…/task-2/` · `…/task-3/` → per-task Allure reports
+
+Each job also uploads its raw artefacts (Playwright HTML, traces, mobile recordings) for download from the workflow run page.
 
 ## Reporting — Allure
 
@@ -120,11 +118,12 @@ Running 1 test using 1 worker
 .
 ├── README.md                       # this file
 ├── .gitignore
-├── scripts/                        # one-liner setup + run per task (.sh + .ps1 parity)
-│   ├── _env.sh    / _env.ps1       # shared JDK + Android SDK env
-│   ├── setup-task-1.{sh,ps1}  /  run-task-1.{sh,ps1}
-│   ├── setup-task-2.{sh,ps1}  /  run-task-2.{sh,ps1}
-│   └── setup-task-3.{sh,ps1}  /  run-task-3.{sh,ps1}
+├── .github/workflows/ci.yml        # 3 parallel test jobs + GitHub Pages deploy
+├── scripts/                        # one-liner setup + run per task (Bash)
+│   ├── _env.sh                     # shared JDK + Android SDK env (sourced by others)
+│   ├── setup-task-1.sh / run-task-1.sh
+│   ├── setup-task-2.sh / run-task-2.sh
+│   └── setup-task-3.sh / run-task-3.sh
 ├── task-1-web/                     # Task I — Playwright UI
 │   ├── playwright.config.ts        # list + html + allure reporters; video: 'on'
 │   ├── tsconfig.json               # path aliases: @core, @pages, @fixtures
@@ -172,7 +171,7 @@ Running 1 test using 1 worker
 - **No authentication for Task II.** All GitHub endpoints used (`/orgs/{org}/repos`, `/search/issues`) are public. One test run costs ~1 request (with `per_page=100`), well below the 60/hr unauthenticated quota.
 - **Separation of concerns.** `src/core/` holds infrastructure (base classes, pagination, action wrappers). `src/pages/` and `src/apis/` hold the domain. `tests/` contains assertions and step orchestration only.
 - **Path aliases.** `tsconfig.json` defines `@core/*`, `@pages/*`, `@apis/*`, `@fixtures/*` — imports stay readable as the tree grows. `tsx` (used by Playwright) honours them via the same `tsconfig`.
-- **Cross-platform scripts.** Every shell script (`*.sh`) has a PowerShell sibling (`*.ps1`) with parity behaviour, including JDK / Android SDK auto-detection and Allure report generation. Reviewers on macOS, Linux (Git Bash / WSL), and native Windows hit the same one-liners.
+- **Cloud-runnable.** No reviewer needs to install anything locally — every push runs all three suites on GitHub-hosted runners and publishes the Allure reports to GitHub Pages. The local Bash scripts and the CI workflow share the same `npm` commands and Allure outputs, so the experience matches whether you run it on your laptop or in the cloud.
 
 ## Engineering notes
 
