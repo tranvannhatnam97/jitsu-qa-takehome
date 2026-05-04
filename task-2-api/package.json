@@ -1,0 +1,17 @@
+{
+  "name": "task-2-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright API tests against the GitHub REST API",
+  "scripts": {
+    "test": "playwright test",
+    "test:list": "playwright test --reporter=list",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}
