@@ -5,14 +5,14 @@ import { BasePage } from '@core/base-page';
  * Result page shown for a specific city, e.g. https://time.is/Los_Angeles
  *
  * Selector notes — verified against the live site at the time of writing:
- *   - `#twd`  → the live updating clock, text formatted as `HH:MM:SS<sp>am/pm`
- *   - `#dd`   → the date line ("Monday, May 4, 2026")
- *   - `h1`    → city heading ("Time in Los Angeles, CA, USA now")
+ *   - `#clock` → the live updating clock, text formatted as `HH:MM:SS`
+ *   - `#dd`    → the date line ("Sunday, May 3, 2026")
+ *   - `h1`     → city heading ("Time in Los Angeles, California, United States now")
  */
 export class TimeResultPage extends BasePage {
   private readonly heading = 'h1';
   private readonly dateLabel = '#dd';
-  private readonly clock = '#twd';
+  private readonly clock = '#clock';
 
   constructor(page: Page) {
     super(page);
