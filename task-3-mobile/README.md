@@ -24,19 +24,32 @@ The spec covers the six steps from the PDF:
 | Android emulator (or real device) | API 34 | the test target |
 | `apps/jitsu-driver.apk` | provided | placed under `task-3-mobile/apps/` |
 
-## One-time setup
+## Quickest path
+
+From the repo root:
+
+```bash
+sh scripts/setup-task-3.sh    # JDK + SDK + emulator + AVD + Appium driver + node deps
+# place the APK at apps/jitsu-driver.apk
+sh scripts/run-task-3.sh      # boots emulator + Appium if needed, runs spec, builds Allure
+```
+
+The setup script is idempotent — every step is gated on whether the artefact already exists, so re-running it is safe.
+
+## Manual setup (if you want to do it step by step)
 
 ```bash
 # 1. JDK and Android command-line tools (no sudo)
 brew install openjdk@17
 brew install --cask android-commandlinetools
 
-# 2. Activate env vars in this shell (and any future shell)
-source scripts/setup-env.sh
+# 2. Activate env vars in this shell
+source ../scripts/_env.sh
 
 # 3. Install SDK components (~3–4 GB on disk)
 yes | sdkmanager --licenses --sdk_root=$ANDROID_HOME
 sdkmanager --sdk_root=$ANDROID_HOME \
+    "cmdline-tools;latest" \
     "platform-tools" \
     "platforms;android-34" \
     "build-tools;34.0.0" \
@@ -56,20 +69,20 @@ npx appium driver install uiautomator2
 cp /path/to/downloaded/jitsu-driver.apk apps/
 ```
 
-## Run
+## Manual run
 
 ```bash
 # Terminal A — boot the emulator (leave running)
-source scripts/setup-env.sh
+source ../scripts/_env.sh
 emulator -avd jitsu_test -no-snapshot -no-audio &
 adb wait-for-device
 
 # Terminal B — start Appium (leave running)
-source scripts/setup-env.sh
+source ../scripts/_env.sh
 npm run appium
 
 # Terminal C — run the test
-source scripts/setup-env.sh
+source ../scripts/_env.sh
 npm test
 
 # View the Allure report (per-step screenshots + screen-recording video)
@@ -84,7 +97,7 @@ task-3-mobile/
 ├── tsconfig.json               # path aliases: @core, @screens, @fixtures
 ├── package.json
 ├── README.md                   # this file
-├── scripts/setup-env.sh        # exports JAVA_HOME, ANDROID_HOME, PATH
+├── scripts/probe-flow.ts       # selector-discovery utility (run after the app is installed)
 ├── apps/
 │   └── jitsu-driver.apk        # gitignored
 ├── src/

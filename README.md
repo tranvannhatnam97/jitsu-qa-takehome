@@ -16,31 +16,23 @@ Each task is a self-contained project with its own `package.json`, dependencies,
 
 ## Quick start
 
-Both tasks run independently. Node.js ≥ 20 is the only shared prerequisite.
+Each task has a one-line setup and a one-line run script under [`scripts/`](./scripts/). Node.js ≥ 20 is the only shared prerequisite for Tasks I and II; Task III also needs Homebrew (the setup script installs everything else).
 
 ```bash
-# Task I — web (downloads Chromium on first run)
-cd task-1-web
-npm install
-npx playwright install chromium
-npm test
+# Task I — web (Playwright + Chromium)
+sh scripts/setup-task-1.sh && sh scripts/run-task-1.sh
 
-# Task II — API (no browser needed, no auth needed)
-cd ../task-2-api
-npm install
-npm test                        # default org: SeleniumHQ
-GITHUB_ORG=playwright npm test  # optional: switch org
+# Task II — API (no browser, no auth)
+sh scripts/setup-task-2.sh && sh scripts/run-task-2.sh
+GITHUB_ORG=playwright sh scripts/run-task-2.sh   # override the target org
 
-# Task III — Mobile (needs JDK 17 + Android SDK + emulator + APK)
-cd ../task-3-mobile
-source scripts/setup-env.sh                # JAVA_HOME, ANDROID_HOME on PATH
-emulator -avd jitsu_test -no-window -no-audio &
-adb wait-for-device
-npm install
-npx appium driver install uiautomator2
-npm run appium &                            # leave running
-npm test                                    # spec + per-step outputs
+# Task III — Mobile (JDK 17 + Android SDK + ARM64 emulator + Appium)
+sh scripts/setup-task-3.sh                       # ~30 min on first run, ~10 GB on disk
+# Place the Jitsu Driver APK at task-3-mobile/apps/jitsu-driver.apk
+sh scripts/run-task-3.sh                         # boots the emulator + Appium if needed
 ```
+
+The `setup-*` scripts are idempotent — re-running them is safe and only re-installs missing pieces. The `run-*` scripts also build the Allure report (per-step screenshots + the Task III device recording).
 
 ## Reporting — Allure
 
@@ -65,7 +57,7 @@ npm run report                          # generates allure-report/, opens it in 
 `npm run report` is shorthand for `allure generate allure-results --clean -o allure-report && allure open allure-report`. Allure requires **Java 11 or newer** on your PATH; the project installs OpenJDK 17 for Task III so reusing that JDK is enough:
 
 ```bash
-source task-3-mobile/scripts/setup-env.sh   # exports JAVA_HOME
+source scripts/_env.sh             # exports JAVA_HOME (and Android paths)
 cd task-1-web && npm run report
 ```
 
@@ -113,28 +105,47 @@ Running 1 test using 1 worker
 .
 ├── README.md                       # this file
 ├── .gitignore
+├── scripts/                        # one-liner setup + run per task
+│   ├── _env.sh                     # shared JDK + Android SDK env (sourced by others)
+│   ├── setup-task-1.sh / run-task-1.sh
+│   ├── setup-task-2.sh / run-task-2.sh
+│   └── setup-task-3.sh / run-task-3.sh
 ├── task-1-web/                     # Task I — Playwright UI
-│   ├── playwright.config.ts
+│   ├── playwright.config.ts        # list + html + allure reporters; video: 'on'
 │   ├── tsconfig.json               # path aliases: @core, @pages, @fixtures
 │   ├── package.json
 │   ├── README.md                   # task-specific docs
 │   ├── src/
-│   │   ├── core/                   # base-component.ts, base-page.ts
+│   │   ├── core/                   # base-component.ts, base-page.ts, step.ts (allure helper)
 │   │   ├── pages/                  # home-page.ts, time-result-page.ts
 │   │   └── fixtures/               # pages.fixture.ts (extends Playwright `test`)
 │   └── tests/
 │       └── time.spec.ts            # data-driven over a CITIES array
-└── task-2-api/                     # Task II — Playwright APIRequestContext
-    ├── playwright.config.ts        # baseURL + GitHub headers + optional Bearer token
+├── task-2-api/                     # Task II — Playwright APIRequestContext
+│   ├── playwright.config.ts        # baseURL + GitHub headers (no auth — public endpoints only)
+│   ├── tsconfig.json
+│   ├── package.json
+│   ├── README.md
+│   ├── src/
+│   │   ├── core/                   # base-api.ts (Link-header pagination, status assertion)
+│   │   ├── apis/                   # github-org-api.ts (one method per question)
+│   │   └── fixtures/               # api.fixture.ts
+│   └── tests/
+│       └── github-org.spec.ts
+└── task-3-mobile/                  # Task III — Appium + WebdriverIO + Playwright runner
+    ├── playwright.config.ts        # serial single-worker; allure reporter
     ├── tsconfig.json
     ├── package.json
     ├── README.md
+    ├── apps/                       # APK lives here (gitignored)
+    ├── recordings/                 # adb screenrecord outputs (gitignored)
+    ├── scripts/probe-flow.ts       # selector-discovery utility
     ├── src/
-    │   ├── core/                   # base-api.ts (Link-header pagination, status assertion)
-    │   ├── apis/                   # github-org-api.ts (one method per question)
-    │   └── fixtures/               # api.fixture.ts
+    │   ├── core/                   # driver.ts, base-screen.ts, step.ts
+    │   ├── screens/                # login / profile / tutorials / active-assignment
+    │   └── fixtures/               # screens.fixture.ts (driver + screen objects + screenrecord)
     └── tests/
-        └── github-org.spec.ts
+        └── tutorials.spec.ts
 ```
 
 ## Design principles
